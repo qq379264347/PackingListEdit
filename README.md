@@ -12,4 +12,5 @@
 保修单号\t箱号\t旧件编号\t旧件名称\t发运量
 2028070002    F4J15-1121010  油轨喷油器总成
 2025070003    F4J16-1130011  碳罐电磁阀总成
+
 <img width="480" height="1068" alt="image" src="https://github.com/user-attachments/assets/b4c6521e-d075-4033-baab-fcd800218c9e" />
