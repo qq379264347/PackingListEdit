@@ -94,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
     private PartAdapter adapter;
     /**
      * 下一个新箱号，若都没编号则为1，否则为：最大箱号+1
+     * V1.1 注意指定箱号时候不能大于等于此值，指定成功后（以前的较小箱号）也不能更新此值
      */
     private int nextNewBoxNumber = 1;
 
@@ -332,8 +333,7 @@ public class MainActivity extends AppCompatActivity {
                 nextNewBoxNumber = 1;
             }
 
-            // 10. 触发搜索刷新界面
-            performSearch();
+            performSearch(); // 重新执行搜索（可能受"隐藏已装箱"选项影响）
             updateStatus(); // 更新顶部状态栏
         } catch (IOException e) {
             Toast.makeText(this, "读取文件失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -554,10 +554,6 @@ public class MainActivity extends AppCompatActivity {
             // 设置箱号（转换为字符串存储）
             part.setBoxNumber(String.valueOf(boxNumber));
         }
-
-        // === 3. 更新箱号计数器 ===
-        // 下一个建议箱号 = 当前分配箱号 + 1
-        nextNewBoxNumber = boxNumber + 1;
         // === 4. 持久化存储 ===
         saveData(); // 将修改后的 allParts 保存到文件
 
@@ -566,9 +562,7 @@ public class MainActivity extends AppCompatActivity {
                 "已分配 " + displayedParts.size() + " 个零件到箱号: " + boxNumber,
                 Toast.LENGTH_SHORT).show();
 
-        // === 5. 界面刷新 ===
-        performSearch(); // 重新执行搜索（可能受"隐藏已装箱"选项影响）
-        updateStatus();  // 更新顶部状态栏显示
+        loadData(); //指定箱号时可能箱号很小。保存文件后重新加载数据，重新统计最大箱号以及下一个新箱号，刷新界面。
     }
 
     /**
@@ -610,6 +604,10 @@ public class MainActivity extends AppCompatActivity {
                                 Toast.makeText(MainActivity.this, "箱号必须为非负整数", Toast.LENGTH_SHORT).show();
                                 return;
                             }
+                            if (boxNumber >= (nextNewBoxNumber - 1)) {
+                                Toast.makeText(MainActivity.this, "指定的箱号只能比最大箱号小", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
 
                             // 6. 验证通过，执行分配操作
                             assignToBox(boxNumber);
@@ -634,7 +632,7 @@ public class MainActivity extends AppCompatActivity {
     private void updateStatus() {
         int lastBoxNumber = nextNewBoxNumber - 1;
 
-        String status = "上一次装箱号: " + lastBoxNumber +
+        String status = "上一次最大箱号: " + lastBoxNumber +
                 "\n下一个新箱号: " + nextNewBoxNumber;
         statusTextView.setText(status);
     }
