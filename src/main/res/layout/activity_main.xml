@@ -24,7 +24,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="放入上一个箱号"/>
+            android:text="放入上一个最大箱号"/>
 
         <Button
             android:id="@+id/newBoxButton"
