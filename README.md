@@ -15,7 +15,7 @@
 |2025070003||F4J16-1130011|碳罐电磁阀总成|1|
 |2025070004||807000877AA|车载充电器总成|1|
 
-<img width="480" height="1068" alt="image" src="https://github.com/user-attachments/assets/b4c6521e-d075-4033-baab-fcd800218c9e" />
+![e450a621fd02ce1906e1417cf5f06e5](https://github.com/user-attachments/assets/bb772cea-e6e6-4c4f-a71c-f4235c73bb36)
 
 # 使用方式
 1、首次安装打开后要先授予全部文件访问权限，然后会因无数据而生成示例文件（本app只会读写此文件，UTF-8编码：磁盘根目录/J2MECloud/装箱单.txt）。<br>
