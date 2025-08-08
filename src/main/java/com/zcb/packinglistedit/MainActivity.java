@@ -278,8 +278,9 @@ public class MainActivity extends AppCompatActivity {
             // 调用父类方法，执行默认的返回键行为（通常为关闭当前 Activity或退出应用）
             // 如果是第二次点击返回键，则退出应用
             super.onBackPressed();
-            finishAffinity(); // 关闭所有Activity
-            System.exit(0);    // 杀掉进程
+            finishAffinity(); // 关闭前台所有Activity，再杀掉进程
+            android.os.Process.killProcess(android.os.Process.myPid());
+//            System.exit(0);    // 杀掉进程
         } else {
             // 如果时间间隔超过预设值，则更新 lastBackPressedTime 记录当前点击的时间
             lastBackPressedTime = currentTime;
@@ -345,7 +346,7 @@ public class MainActivity extends AppCompatActivity {
                 // 5. 按Tab分割每行数据
                 String[] parts = line.split("\t");
                 //数据格式错误检查，5列内容且不是标题行
-                if (parts.length == 5 && !"保修单号".equals(parts[0])) { //0保修单号 1箱号 2旧件编号 3旧件名称 4发运量
+                if (parts.length == 5 && !(parts[0] != null && parts[0].contains("保修单号"))) { //0保修单号 1箱号 2旧件编号 3旧件名称 4发运量，可能编辑后有UTF8文件BOM头，用contains判断包含
                     String boxNumber = parts[1].trim();
                     // 6. 解析数据并创建Part对象
                     allParts.add(new Part(parts[0].trim(), boxNumber, parts[2].trim(), parts[3].trim(), parts[4].trim()));
