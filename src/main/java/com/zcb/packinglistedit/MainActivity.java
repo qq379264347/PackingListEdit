@@ -44,6 +44,10 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_PERMISSION_CODE = 1001;
     private static final int REQUEST_MANAGE_STORAGE = 1002;
     /**
+     * 记录用户上一次点击返回键时的系统时间（单位：毫秒）
+     */
+    private long lastBackPressedTime = 0;
+    /**
      * 顶部状态文本视图
      */
     private TextView statusTextView;
@@ -193,6 +197,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
+     * 后台切前台重新加载数据
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 当Activity进入前台时，重新加载数据（触发搜索、界面刷新）
+        loadData();
+    }
+
+    /**
      * 初始化视图
      */
     private void initializeViews() {
@@ -248,6 +262,30 @@ public class MainActivity extends AppCompatActivity {
         prevBoxButton.setOnClickListener(v -> assignToBox(nextNewBoxNumber - 1));
         newBoxButton.setOnClickListener(v -> assignToBox(nextNewBoxNumber));
         customBoxButton.setOnClickListener(v -> showCustomBoxDialog());
+    }
+
+    /**
+     * 按压返回键处理
+     */
+    @Override
+    public void onBackPressed() {
+        // 获取当前系统时间（单位：毫秒）
+        long currentTime = System.currentTimeMillis();
+
+        // 计算当前时间与上一次点击返回键之间的时间差
+        if (currentTime - lastBackPressedTime < 2000) {
+            // 如果两次点击的时间间隔小于预设的阈值（例如2000毫秒），则认为用户有明确的退出意图
+            // 调用父类方法，执行默认的返回键行为（通常为关闭当前 Activity或退出应用）
+            // 如果是第二次点击返回键，则退出应用
+            super.onBackPressed();
+            finishAffinity(); // 关闭所有Activity
+            System.exit(0);    // 杀掉进程
+        } else {
+            // 如果时间间隔超过预设值，则更新 lastBackPressedTime 记录当前点击的时间
+            lastBackPressedTime = currentTime;
+            // 显示 Toast 提示用户“再按一次退出”
+            Toast.makeText(this, "再按一次退出应用", Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**
@@ -356,12 +394,13 @@ public class MainActivity extends AppCompatActivity {
                     "2025070003\t\tF4J16-1130011\t碳罐电磁阀总成\t1\n" +
                     "2025070004\t\t807000877AA\t车载充电器总成\t1\n";
             writer.write(sampleData);
-
-            loadData(); // 重新加载新创建的数据
+            writer.flush();
         } catch (IOException e) {
             Toast.makeText(this, "创建示例文件失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             e.printStackTrace();
         }
+
+        loadData(); // 重新加载新创建的数据
     }
 
     /**
@@ -398,7 +437,6 @@ public class MainActivity extends AppCompatActivity {
      */
     private void performSearch() {
         // 1. 获取搜索关键词（转换为小写方便忽略大小写匹配）
-//        String query = searchEditText.getText().toString().trim().toLowerCase();
         String numberQuery = searchEditText.getText().toString().trim().toLowerCase();
         String textQuery = textSearchEditText.getText().toString().trim().toLowerCase();
         // 2. 获取复选框状态：是否隐藏已装箱的零件
@@ -411,9 +449,9 @@ public class MainActivity extends AppCompatActivity {
         for (Part part : allParts) {
             // 条件1：检查是否匹配搜索关键词（匹配序号或名称）
             boolean matchesQuery = (numberQuery.isEmpty() && textQuery.isEmpty()) || // 无关键词时显示所有
-                    //配件号与名称同时匹配
-                    (pipeixuhao(numberQuery, part.getBxid().toLowerCase()) && // 扩容4位后去匹配序号 part.getBxid().toLowerCase().contains(query)结果多
-                    pipeimingcheng(textQuery, part.getName().toLowerCase())); // 不是纯数字时候去匹配名称 part.getName().toLowerCase().contains(query)
+                    //保修单号与名称同时匹配
+                    (matchBxid(numberQuery, part.getBxid().toLowerCase()) && // 扩容4位后去匹配序号 part.getBxid().toLowerCase().contains(query)结果多
+                        matchName(textQuery, part.getName().toLowerCase())); // 不是纯数字时候去匹配名称 part.getName().toLowerCase().contains(query)
 
             // 条件2：检查是否已装箱（根据复选框状态决定是否过滤）
             boolean isBoxed = !part.getBoxNumber().isEmpty(); // 箱号非空=已装箱
@@ -430,32 +468,26 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 匹配名称逻辑，不是纯数字时候才匹配
+     * 匹配名称逻辑
      * @param query 输入的内容-假如是文本
      * @param name 清单中配件名称，如：碳罐电磁阀总成
      * @return 是否匹配上，匹配上返回true，即为检索成功
      */
-    private boolean pipeimingcheng(String query, String name) {
-        if (query.isEmpty()) { //为空的话就返回true，进行显示
+    private boolean matchName(String query, String name) {
+        if (query.isEmpty() || name.isEmpty()) { //为空的话就返回true，进行显示
             return true;
         }
-        // 检查 query 是否由纯数字组成（不用正则，逐字符判断）
-        for (int i = 0; i < query.length(); i++) {
-            char c = query.charAt(i);
-            if (c >= '0' && c <= '9') {
-                return false; // 是数字字符，直接返回 false
-            }
-        }
+
         return name.contains(query);
     }
 
     /**
-     * 匹配序号逻辑
-     * @param query 输入的内容-假如是数字
+     * 保修单号匹配逻辑
+     * @param query 输入的内容-纯数字，保修单号后几位，最多四位
      * @param bxid 清单中保修单号，如：2025070002
      * @return 是否匹配上，保修单号后面数字是输入的数字编号，匹配上返回true，即为检索成功
      */
-    private boolean pipeixuhao(String query, String bxid) {
+    private boolean matchBxid(String query, String bxid) {
         if (query.isEmpty()) { //为空的话就返回true，进行显示
             return true;
         }
